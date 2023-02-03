@@ -1,0 +1,22 @@
+{
+    "tables": {
+        "load_forecast": {
+            "table_id": "load_forecast",
+            "partition_type": "DAY",
+            "partition_field": "ts",
+            "clustering": [
+                "country_code",
+                "ts"
+            ]
+        },
+        "wind_and_solar_forecast": {
+            "table_id": "wind_and_solar_forecast",
+            "partition_type": "DAY",
+            "partition_field": "ts",
+            "clustering": [
+                "country_code",
+                "ts"
+            ]
+        }
+    }
+}

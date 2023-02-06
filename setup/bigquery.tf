@@ -1,6 +1,7 @@
 locals {
-  path   = "../bigquery"
-  tables = jsondecode(file("${local.path}/tables.json"))["tables"]
+  path            = "../bigquery"
+  tables          = jsondecode(file("${local.path}/tables.json"))["tables"]
+  external_tables = jsondecode(file("${local.path}/external-tables.json"))["tables"]
 }
 
 resource "google_bigquery_dataset" "entsoe_dataset" {
@@ -9,7 +10,7 @@ resource "google_bigquery_dataset" "entsoe_dataset" {
   location    = var.data_location
 }
 
-resource "google_bigquery_table" "default" {
+resource "google_bigquery_table" "internal_tables" {
   for_each   = local.tables
   dataset_id = google_bigquery_dataset.entsoe_dataset.dataset_id
   table_id   = each.value["table_id"]
@@ -27,4 +28,22 @@ resource "google_bigquery_table" "default" {
     }
   }
   clustering = try(each.value["clustering"], [])
+}
+
+resource "google_bigquery_table" "external_tables" {
+  for_each            = local.external_tables
+  dataset_id          = google_bigquery_dataset.entsoe_dataset.dataset_id
+  table_id            = each.value["table_id"]
+  schema              = file("${local.path}/schema/${each.value["table_id"]}.json")
+  deletion_protection = false
+
+  external_data_configuration {
+    autodetect    = each.value["external_data_autodetect"]
+    source_format = each.value["source_format"]
+    source_uris   = each.value["source_uris"]
+    hive_partitioning_options {
+      mode              = each.value["hive_partitioning_mode"]
+      source_uri_prefix = each.value["source_uri_prefix"]
+    }
+  }
 }

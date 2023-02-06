@@ -23,5 +23,20 @@
         "name": "wind_onshore",
         "type": "FLOAT",
         "mode": "NULLABLE"
+    },
+    {
+        "name": "year",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "month",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "day",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
     }
 ]

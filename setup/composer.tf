@@ -1,3 +1,7 @@
+locals {
+  dag_path = "../dags"
+}
+
 resource "google_storage_bucket" "entsoe_bucket" {
   name          = var.storage_bucket_name
   location      = var.data_location
@@ -55,4 +59,12 @@ resource "google_composer_environment" "entsoe_composer_env" {
       service_account = google_service_account.composer_service_account.name
     }
   }
+}
+
+resource "google_storage_bucket_object" "dags" {
+  for_each = fileset("${local.dag_path}", "**")
+
+  name   = "dags/${each.value}"
+  source = "${local.dag_path}/${each.value}"
+  bucket = split("/", google_composer_environment.entsoe_composer_env.config.0.dag_gcs_prefix).2
 }

@@ -20,7 +20,7 @@
                 "gs://entsoe-demo/actual_load/*"
             ]
         },
-        "actual_load": {
+        "wind_and_solar_forecast": {
             "table_id": "wind_and_solar_forecast",
             "external_data_autodetect": true,
             "source_format": "PARQUET",

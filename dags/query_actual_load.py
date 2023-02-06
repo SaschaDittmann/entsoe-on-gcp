@@ -30,7 +30,7 @@ default_dag_args = {
 
 with DAG(
         'query_actual_load',
-        schedule_interval="*/15 * * * *",
+        schedule_interval="0 * * * *",
         catchup=False,
         dagrun_timeout=timedelta(minutes=15),
         default_args=default_dag_args) as dag:
@@ -60,7 +60,7 @@ with DAG(
         tmp_file_path = '/home/airflow/gcs/data/actual_load.parquet'
         load_forecast.to_parquet(tmp_file_path)
 
-        object_name = f"actual_load/{execution_date.strftime('%Y/%m/%d')}/actual_load.parquet"
+        object_name = f"actual_load/{execution_date.strftime('year=%Y/month=%m/day=%d')}/actual_load.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
     store_load_forecast_task = PythonOperator(
         task_id='store_actual_load',

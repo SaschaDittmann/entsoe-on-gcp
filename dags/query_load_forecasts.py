@@ -25,13 +25,13 @@ entsoe_bucket_name = Variable.get("entsoe_bucket_name")
 
 default_dag_args = {
     'owner': 'airflow',
-    'start_date': days_ago(1),
+    'start_date': days_ago(7),
 }
 
 with DAG(
         'query_load_forecasts',
         schedule_interval="0 6 * * *",
-        catchup=False,
+        catchup=True,
         dagrun_timeout=timedelta(minutes=60),
         default_args=default_dag_args) as dag:
 
@@ -42,7 +42,7 @@ with DAG(
         entsoe_start = execution_date + timedelta(days=1)
         logging.info(f"Start Day: {entsoe_start}")
         entsoe_end = entsoe_start + timedelta(days=1)
-        logging.info(f"End Day: {entsoe_start}")
+        logging.info(f"End Day: {entsoe_end}")
 
         start = pd.Timestamp(entsoe_start.strftime("%Y%m%d"), tz='UTC')
         end = pd.Timestamp(entsoe_end.strftime("%Y%m%d"), tz='UTC')
@@ -74,7 +74,7 @@ with DAG(
         entsoe_start = execution_date + timedelta(days=1)
         logging.info(f"Start Day: {entsoe_start}")
         entsoe_end = entsoe_start + timedelta(days=1)
-        logging.info(f"End Day: {entsoe_start}")
+        logging.info(f"End Day: {entsoe_end}")
 
         start = pd.Timestamp(entsoe_start.strftime("%Y%m%d"), tz='UTC')
         end = pd.Timestamp(entsoe_end.strftime("%Y%m%d"), tz='UTC')

@@ -42,7 +42,7 @@ with DAG(
         entsoe_start = execution_date
         logging.info(f"Start Day: {entsoe_start}")
         entsoe_end = entsoe_start + timedelta(days=1)
-        logging.info(f"End Day: {entsoe_start}")
+        logging.info(f"End Day: {entsoe_end}")
 
         start = pd.Timestamp(entsoe_start.strftime("%Y%m%d"), tz='UTC')
         end = pd.Timestamp(entsoe_end.strftime("%Y%m%d"), tz='UTC')

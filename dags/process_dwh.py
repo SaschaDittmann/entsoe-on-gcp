@@ -155,21 +155,21 @@ with DAG(
     upload_index_file = LocalFilesystemToGCSOperator(
         task_id="upload_index_file",
         src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/index.html",
-        dst="index.html",
+        dst="{{ run_id }}/index.html",
         bucket=website_bucket_name,
     )
 
     upload_manifest_file = LocalFilesystemToGCSOperator(
         task_id="upload_manifest_file",
         src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/manifest.json",
-        dst="manifest.json",
+        dst="{{ run_id }}/manifest.json",
         bucket=website_bucket_name,
     )
 
     upload_catalog_file = LocalFilesystemToGCSOperator(
         task_id="upload_catalog_file",
         src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/catalog.json",
-        dst="catalog.json",
+        dst="{{ run_id }}/catalog.json",
         bucket=website_bucket_name,
     )
 

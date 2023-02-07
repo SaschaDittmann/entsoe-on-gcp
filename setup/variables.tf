@@ -3,8 +3,13 @@ variable "project_id" {
   type        = string
 }
 
-variable "storage_bucket_name" {
+variable "storage_data_bucket_name" {
   description = "The name of the Cloud Storage bucket, which is used to store files extracted from the ENTSO-E platform."
+  type        = string
+}
+
+variable "storage_web_bucket_name" {
+  description = "The name of the Cloud Storage bucket, which is used to store the data transformation docs."
   type        = string
 }
 

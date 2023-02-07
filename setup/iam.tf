@@ -62,3 +62,22 @@ resource "google_project_iam_member" "dbt_sa_bigquery_job_user" {
   role    = "roles/bigquery.jobUser"
   member  = "serviceAccount:${google_service_account.dbt_service_account.email}"
 }
+
+resource "google_project_service_identity" "cloud_build_sa" {
+  provider = google-beta
+
+  project = data.google_project.project.project_id
+  service = "cloudbuild.googleapis.com"
+}
+
+resource "google_project_iam_member" "cloud_build_sa_cloud_run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_project_service_identity.cloud_build_sa.email}"
+}
+
+resource "google_project_iam_member" "cloud_build_sa_service_account_user" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_project_service_identity.cloud_build_sa.email}"
+}

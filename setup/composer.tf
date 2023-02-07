@@ -25,9 +25,9 @@ resource "google_composer_environment" "entsoe_composer_env" {
 
       pypi_packages = {
         "entsoe-py"          = "",
-        "airflow-dbt"        = "",
-        "airflow-dbt-python" = ""
-        #"airflow-dbt-python" = "[bigquery]"
+        "dbt-core"           = "~=1.3.0",
+        "dbt-bigquery"       = "~=1.3.0",
+        "airflow-dbt-python" = "[bigquery]"
       }
     }
 

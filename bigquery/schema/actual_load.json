@@ -1,0 +1,17 @@
+[
+    {
+        "name": "ts",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "country_code",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "actual_load",
+        "type": "FLOAT",
+        "mode": "NULLABLE"
+    }
+]

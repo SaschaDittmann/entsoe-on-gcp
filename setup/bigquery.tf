@@ -59,3 +59,25 @@ resource "google_bigquery_table" "external_tables" {
     }
   }
 }
+
+resource "google_bigquery_table" "views" {
+  for_each            = fileset("${local.path}/views", "*.sql")
+  dataset_id          = google_bigquery_dataset.entsoe_dataset.dataset_id
+  table_id            = replace(each.value, ".sql", "")
+  deletion_protection = false
+  depends_on = [
+    google_bigquery_table.internal_tables,
+    google_bigquery_table.external_tables
+  ]
+
+  view {
+    query          = file("${local.path}/views/${each.value}")
+    use_legacy_sql = false
+  }
+}
+
+resource "google_bigquery_dataset" "entsoe_dw_dataset" {
+  dataset_id  = "entsoe_dw"
+  description = "ENTSO-E Transparency Data Warehouse"
+  location    = var.data_location
+}

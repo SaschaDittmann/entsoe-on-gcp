@@ -1,0 +1,68 @@
+version: 2
+
+sources:
+  - name: entsoe
+    description: Extracted data from ENTSO-E Transparency Platform
+    database: entsoe-demo
+    schema: entsoe
+    tables:
+      - name: vw_actual_load
+        description: Actual Total Load
+        columns:
+          - name: ts
+            description: Timestamp
+            tests:
+              #- unique
+              - not_null
+          - name: country_code
+            description: Country Code
+            tests:
+              - not_null
+          - name: actual_load
+            description: Actual Total Load
+            tests:
+              - not_null
+        loaded_at_field: import_date
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+      - name: vw_load_forecast
+        description: Day-Ahead Total Load Forecast
+        columns:
+          - name: ts
+            description: Timestamp
+            tests:
+              #- unique
+              - not_null
+          - name: country_code
+            description: Country Code
+            tests:
+              - not_null
+          - name: forecasted_load
+            description: Forecasted Load
+        loaded_at_field: import_date
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+      - name: vw_wind_and_solar_forecast
+        description: Day-ahead Generation Forecasts for Wind and Solar
+        columns:
+          - name: ts
+            description: Timestamp
+            tests:
+              #- unique
+              - not_null
+          - name: country_code
+            description: Country Code
+            tests:
+              - not_null
+          - name: solar
+            description: Forecasted Solar Generation
+          - name: wind_offshore
+            description: Forecasted Wind (Offshore) Generation
+          - name: wind_onshore,
+            description: Forecasted Wind (Onshore) Generation
+        loaded_at_field: import_date
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}

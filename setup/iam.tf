@@ -28,6 +28,12 @@ resource "google_project_iam_member" "composer_sa_storage_object_creator" {
   member  = "serviceAccount:${google_service_account.composer_service_account.email}"
 }
 
+resource "google_project_iam_member" "composer_sa_cloudbuild_builds_editor" {
+  project = var.project_id
+  role    = "roles/cloudbuild.builds.editor"
+  member  = "serviceAccount:${google_service_account.composer_service_account.email}"
+}
+
 resource "google_service_account" "dbt_service_account" {
   account_id   = "dbt-service-account"
   display_name = "Service Account for the Data Build Tool (DBT)"

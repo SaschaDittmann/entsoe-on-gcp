@@ -16,7 +16,7 @@ resource "google_composer_environment" "entsoe_composer_env" {
   region  = var.project_region
   depends_on = [
     google_service_account_iam_member.composer_service_agent_v2,
-    google_project_iam_member.composer_worker
+    google_project_iam_member.composer_sa_composer_worker
   ]
 
   config {

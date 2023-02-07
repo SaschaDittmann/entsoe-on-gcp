@@ -1,10 +1,14 @@
 from __future__ import print_function
 from datetime import timedelta
 import json
+import logging
+import os
+import tempfile
 
 from airflow import DAG, settings
 from airflow.models import Variable
 from airflow.models.connection import Connection
+from airflow.utils.task_group import TaskGroup
 from airflow.utils.dates import days_ago
 
 from airflow.operators.bash_operator import BashOperator
@@ -71,18 +75,26 @@ with DAG(
         dagrun_timeout=timedelta(minutes=60),
         default_args=default_dag_args) as dag:
 
+    def create_temp_directory(ti):
+        tmpdir = tempfile.TemporaryDirectory()
+        logging.info(f"directory {tmpdir.name} created")
+        assert os.path.exists(tmpdir.name)
+        ti.xcom_push(key='dbt_temp_directory', value=tmpdir.name)
+    create_temp_directory_task = PythonOperator(
+        task_id='create_temp_directory',
+        python_callable=create_temp_directory)
+
     checkout = BashOperator(
         task_id='checkout',
-        bash_command="""mkdir -p /home/airflow/gcs/data/{{ run_id }} && 
-            git clone {{ var.value.git_remote_url }} 
-            cp -r ./entsoe-on-gcp /home/airflow/gcs/data/{{ run_id }}
+        bash_command="""git clone {{ var.value.git_remote_url }} 
+            cp -r ./entsoe-on-gcp {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
             """,
         dag=dag,
     )
 
     resolve_dependencies = DbtDepsOperator(
         task_id='resolve-dependencies',
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -90,7 +102,7 @@ with DAG(
 
     check_source_freshness = DbtSourceFreshnessOperator(
         task_id='check-source-freshness',
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         do_xcom_push_artifacts=["sources.json"],
@@ -100,7 +112,7 @@ with DAG(
     run_source_tests = DbtTestOperator(
         task_id='run-source-tests',
         select="source:*",
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -108,7 +120,7 @@ with DAG(
 
     add_seeds = DbtSeedOperator(
         task_id='add-seeds',
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -116,7 +128,7 @@ with DAG(
 
     run_transformations = DbtRunOperator(
         task_id='run-transformations',
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         do_xcom_push_artifacts=["manifest.json", "run_results.json"],
@@ -125,7 +137,7 @@ with DAG(
 
     generate_docs = DbtDocsGenerateOperator(
         task_id='generate-docs',
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -134,7 +146,7 @@ with DAG(
     run_tests = DbtTestOperator(
         task_id='run-tests',
         exclude='source:*',
-        project_dir="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -142,25 +154,26 @@ with DAG(
 
     upload_index_file = LocalFilesystemToGCSOperator(
         task_id="upload_index_file",
-        src="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw/target/index.html",
-        dst="index.html",
+        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/index.html",
+        dst="{{ run_id }}/index.html",
         bucket=website_bucket_name,
     )
 
     upload_manifest_file = LocalFilesystemToGCSOperator(
         task_id="upload_manifest_file",
-        src="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw/target/manifest.json",
-        dst="index.html",
+        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/manifest.json",
+        dst="{{ run_id }}/manifest.json",
         bucket=website_bucket_name,
     )
 
     upload_catalog_file = LocalFilesystemToGCSOperator(
         task_id="upload_catalog_file",
-        src="/home/airflow/gcs/data/{{ run_id }}/entsoe-on-gcp/entsoe_dw/target/catalog.json",
-        dst="index.html",
+        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/catalog.json",
+        dst="{{ run_id }}/catalog.json",
         bucket=website_bucket_name,
     )
 
+    create_temp_directory_task >> checkout
     checkout >> resolve_dependencies
     resolve_dependencies >> check_source_freshness
     check_source_freshness >> run_source_tests

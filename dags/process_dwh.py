@@ -22,8 +22,12 @@ from airflow_dbt_python.operators.dbt import (
 )
 from airflow.operators.python_operator import PythonOperator
 from airflow.providers.google.cloud.transfers.local_to_gcs import LocalFilesystemToGCSOperator
+from airflow.providers.google.cloud.operators.cloud_build import CloudBuildCreateBuildOperator
 
+project_id = Variable.get("dev_project_id")
 website_bucket_name = Variable.get("static_website_bucket_name")
+dbt_docs_service_name = Variable.get("dbt_docs_service_name")
+dbt_docs_service_region = Variable.get("dbt_docs_service_region")
 
 session = settings.Session()
 existing = session.query(Connection).filter_by(
@@ -86,7 +90,7 @@ with DAG(
 
     checkout = BashOperator(
         task_id='checkout',
-        bash_command="""git clone {{ var.value.git_remote_url }} 
+        bash_command="""git clone {{ var.value.git_remote_url }}
             cp -r ./entsoe-on-gcp {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
             """,
         dag=dag,
@@ -152,25 +156,44 @@ with DAG(
         dag=dag,
     )
 
-    upload_index_file = LocalFilesystemToGCSOperator(
-        task_id="upload_index_file",
-        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/index.html",
-        dst="{{ run_id }}/index.html",
+    create_dbt_docs_file = BashOperator(
+        task_id='create_dbt_docs_file',
+        bash_command="""cd {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
+            tar -czvf dbt-docs.tar.gz -C ./docker Dockerfile -C ../entsoe_dw/target index.html manifest.json catalog.json
+            """,
+        dag=dag,
+    )
+
+    upload_dbt_docs_file = LocalFilesystemToGCSOperator(
+        task_id="upload_dbt_docs_file",
+        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/dbt-docs.tar.gz",
+        dst="dbt-docs.tar.gz",
         bucket=website_bucket_name,
     )
 
-    upload_manifest_file = LocalFilesystemToGCSOperator(
-        task_id="upload_manifest_file",
-        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/manifest.json",
-        dst="{{ run_id }}/manifest.json",
-        bucket=website_bucket_name,
-    )
-
-    upload_catalog_file = LocalFilesystemToGCSOperator(
-        task_id="upload_catalog_file",
-        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw/target/catalog.json",
-        dst="{{ run_id }}/catalog.json",
-        bucket=website_bucket_name,
+    docker_build_from_storage_body = {
+        "source": {"storage_source": f"gs://{website_bucket_name}/dbt-docs.tar.gz"},
+        "steps": [
+            {
+                "name": "gcr.io/cloud-builders/docker",
+                "args": ["build", "-t", f"gcr.io/{project_id}/entsoe-dbt-docs", "."]
+            },
+            {
+                "name": "gcr.io/cloud-builders/docker",
+                "args": ["push", f"gcr.io/{project_id}/entsoe-dbt-docs"]
+            },
+            {
+                "name": "gcr.io/google.com/cloudsdktool/cloud-sdk",
+                "entrypoint": "gcloud",
+                "args": ['run', 'deploy', dbt_docs_service_name, '--image', f"gcr.io/{project_id}/entsoe-dbt-docs", '--region', dbt_docs_service_region, '--port', '80', '--allow-unauthenticated']
+            }
+        ],
+        "images": [f"gcr.io/{project_id}/entsoe-dbt-docs"]
+    }
+    build_container_image = CloudBuildCreateBuildOperator(
+        task_id="build_container_image",
+        project_id=project_id,
+        build=docker_build_from_storage_body
     )
 
     create_temp_directory_task >> checkout
@@ -181,6 +204,6 @@ with DAG(
     add_seeds >> run_transformations
     run_transformations >> run_tests
     run_tests >> generate_docs
-    generate_docs >> upload_index_file
-    generate_docs >> upload_manifest_file
-    generate_docs >> upload_catalog_file
+    generate_docs >> create_dbt_docs_file
+    create_dbt_docs_file >> upload_dbt_docs_file
+    upload_dbt_docs_file >> build_container_image

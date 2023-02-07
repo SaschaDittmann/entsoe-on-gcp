@@ -35,7 +35,7 @@ resource "google_storage_bucket_object" "dummy_data" {
 
   name   = each.value
   source = "${local.path}/data/${each.value}"
-  bucket = google_storage_bucket.entsoe_bucket.name
+  bucket = google_storage_bucket.entsoe_data_bucket.name
 }
 
 resource "google_bigquery_table" "external_tables" {

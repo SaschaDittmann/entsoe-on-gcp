@@ -2,10 +2,10 @@ locals {
   dag_path = "../dags"
 }
 
-resource "google_storage_bucket" "entsoe_bucket" {
-  name          = var.storage_bucket_name
+resource "google_storage_bucket" "entsoe_data_bucket" {
+  name          = var.storage_data_bucket_name
   location      = var.data_location
-  force_destroy = true
+  force_destroy = false
 
   uniform_bucket_level_access = true
 }
@@ -24,9 +24,10 @@ resource "google_composer_environment" "entsoe_composer_env" {
       image_version = "composer-2-airflow-2"
 
       pypi_packages = {
-        "entsoe-py"   = "",
-        "airflow-dbt" = ""
-        #"airflow-dbt-python" = "[bigquery]"
+        "entsoe-py"          = "",
+        "dbt-core"           = "~=1.3.0",
+        "dbt-bigquery"       = "~=1.3.0",
+        "airflow-dbt-python" = "[bigquery]"
       }
     }
 

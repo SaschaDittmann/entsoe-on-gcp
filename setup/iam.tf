@@ -15,3 +15,15 @@ resource "google_project_iam_member" "composer_worker" {
   role    = "roles/composer.worker"
   member  = "serviceAccount:${google_service_account.composer_service_account.email}"
 }
+
+resource "google_project_iam_member" "storage_object_viewer" {
+  project = var.project_id
+  role    = "roles/storage.objectViewer"
+  member  = "serviceAccount:${google_service_account.composer_service_account.email}"
+}
+
+resource "google_project_iam_member" "storage_object_creator" {
+  project = var.project_id
+  role    = "roles/storage.objectCreator"
+  member  = "serviceAccount:${google_service_account.composer_service_account.email}"
+}

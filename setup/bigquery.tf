@@ -1,7 +1,7 @@
 locals {
   path            = "../bigquery"
   tables          = jsondecode(file("${local.path}/tables.json"))["tables"]
-  external_tables = jsondecode(file("${local.path}/external-tables.json"))["tables"]
+  external_tables = jsondecode(replace(file("${local.path}/external-tables.json"), "<storage_data_bucket_name>", var.storage_data_bucket_name))["tables"]
 }
 
 resource "google_bigquery_dataset" "entsoe_dataset" {

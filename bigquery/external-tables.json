@@ -5,9 +5,9 @@
             "external_data_autodetect": true,
             "source_format": "PARQUET",
             "hive_partitioning_mode": "AUTO",
-            "source_uri_prefix": "gs://entsoe-demo/load_forecast/",
+            "source_uri_prefix": "gs://<storage_data_bucket_name>/load_forecast/",
             "source_uris": [
-                "gs://entsoe-demo/load_forecast/*"
+                "gs://<storage_data_bucket_name>/load_forecast/*"
             ]
         },
         "actual_load": {
@@ -15,9 +15,9 @@
             "external_data_autodetect": true,
             "source_format": "PARQUET",
             "hive_partitioning_mode": "AUTO",
-            "source_uri_prefix": "gs://entsoe-demo/actual_load/",
+            "source_uri_prefix": "gs://<storage_data_bucket_name>/actual_load/",
             "source_uris": [
-                "gs://entsoe-demo/actual_load/*"
+                "gs://<storage_data_bucket_name>/actual_load/*"
             ]
         },
         "wind_and_solar_forecast": {
@@ -25,9 +25,9 @@
             "external_data_autodetect": true,
             "source_format": "PARQUET",
             "hive_partitioning_mode": "AUTO",
-            "source_uri_prefix": "gs://entsoe-demo/wind_and_solar_forecast/",
+            "source_uri_prefix": "gs://<storage_data_bucket_name>/wind_and_solar_forecast/",
             "source_uris": [
-                "gs://entsoe-demo/wind_and_solar_forecast/*"
+                "gs://<storage_data_bucket_name>/wind_and_solar_forecast/*"
             ]
         }
     }

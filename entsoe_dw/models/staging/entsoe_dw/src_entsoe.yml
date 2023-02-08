@@ -3,7 +3,6 @@ version: 2
 sources:
   - name: entsoe
     description: Extracted data from ENTSO-E Transparency Platform
-    database: entsoe-demo
     schema: entsoe
     tables:
       - name: vw_actual_load

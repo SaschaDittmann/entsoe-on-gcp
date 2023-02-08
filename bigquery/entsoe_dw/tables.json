@@ -18,8 +18,11 @@
         },
         "dim_date": {
             "table_id": "dim_date",
-            "partition_type": "DAY",
-            "partition_field": "date"
+            "partition_type": "MONTH",
+            "partition_field": "date",
+            "clustering": [
+                "date"
+            ]
         }
     }
 }

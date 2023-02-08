@@ -4,7 +4,8 @@
       "field": "ts",
       "data_type": "timestamp",
       "granularity": "day"
-    }
+    },
+    cluster_by = ["ts"],
 )}}
 
 with load_forecast as (

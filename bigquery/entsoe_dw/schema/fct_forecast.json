@@ -2,7 +2,7 @@
     {
         "name": "ts",
         "type": "TIMESTAMP",
-        "mode": "REQUIRED"
+        "mode": "NULLABLE"
     },
     {
         "name": "load",

@@ -2,7 +2,7 @@
     {
         "name": "date",
         "type": "TIMESTAMP",
-        "mode": "REQUIRED"
+        "mode": "NULLABLE"
     },
     {
         "name": "day",

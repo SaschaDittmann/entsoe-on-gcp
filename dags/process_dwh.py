@@ -73,7 +73,7 @@ default_dag_args = {
 
 with DAG(
         'process_dwh',
-        schedule_interval="0 8 * * *",
+        schedule_interval="0 7 * * *",
         max_active_runs=1,
         catchup=False,
         dagrun_timeout=timedelta(minutes=60),

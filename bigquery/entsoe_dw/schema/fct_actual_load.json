@@ -2,12 +2,7 @@
     {
         "name": "ts",
         "type": "TIMESTAMP",
-        "mode": "REQUIRED"
-    },
-    {
-        "name": "country_code",
-        "type": "STRING",
-        "mode": "REQUIRED"
+        "mode": "NULLABLE"
     },
     {
         "name": "actual_load",

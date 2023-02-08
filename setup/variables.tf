@@ -23,6 +23,9 @@ variable "bq_dataset_id" { default = "entsoe" }
 variable "data_location" { default = "EU" }
 variable "project_region" { default = "europe-west1" }
 
+variable "git_remote_url" { default = "https://github.com/SaschaDittmann/entsoe-on-gcp.git" }
+variable "source_repo_name" { default = "entsoe-on-gcp" }
+
 variable "time_partitioning" {
   description = "Configures time-based partitioning for this table. cf https://www.terraform.io/docs/providers/google/r/bigquery_table.html#field"
   type        = map(string)

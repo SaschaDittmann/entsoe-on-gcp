@@ -1,0 +1,42 @@
+[
+    {
+        "name": "date",
+        "type": "TIMESTAMP",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "day",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "month",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "short_month",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "calendar_month_number",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "calendar_year",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "quarter",
+        "type": "STRING",
+        "mode": "NULLABLE"
+    },
+    {
+        "name": "iso_week_number",
+        "type": "INTEGER",
+        "mode": "NULLABLE"
+    }
+]

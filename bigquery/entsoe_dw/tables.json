@@ -1,0 +1,28 @@
+{
+    "tables": {
+        "fct_actual_load": {
+            "table_id": "fct_actual_load",
+            "partition_type": "DAY",
+            "partition_field": "ts",
+            "clustering": [
+                "ts"
+            ]
+        },
+        "fct_forecast": {
+            "table_id": "fct_forecast",
+            "partition_type": "DAY",
+            "partition_field": "ts",
+            "clustering": [
+                "ts"
+            ]
+        },
+        "dim_date": {
+            "table_id": "dim_date",
+            "partition_type": "MONTH",
+            "partition_field": "date",
+            "clustering": [
+                "date"
+            ]
+        }
+    }
+}

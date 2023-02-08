@@ -86,7 +86,8 @@ resource "google_storage_bucket_object" "variables" {
     "entsoe_api_key": "${var.entsoe_api_key}",
     "entsoe_bucket_name": "${google_storage_bucket.entsoe_data_bucket.name}",
     "entsoe_country_code": "${var.entsoe_country_code}",
-    "git_remote_url": "https://github.com/SaschaDittmann/entsoe-on-gcp.git",
+    "git_remote_url": "${var.git_remote_url}",
+    "source_repo_name": "${var.source_repo_name}",
     "static_website_bucket_name": "${google_storage_bucket.static_website.name}"
   } 
   EOF

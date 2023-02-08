@@ -1,5 +1,6 @@
 locals {
-  dag_path = "../dags"
+  dag_path        = "../dags"
+  dag_sa_key_file = jsondecode(base64decode(google_service_account_key.dbt_service_account_key.private_key))
 }
 
 resource "google_storage_bucket" "entsoe_data_bucket" {
@@ -68,4 +69,30 @@ resource "google_storage_bucket_object" "dags" {
   name   = "dags/${each.value}"
   source = "${local.dag_path}/${each.value}"
   bucket = split("/", google_composer_environment.entsoe_composer_env.config.0.dag_gcs_prefix).2
+}
+
+resource "google_storage_bucket_object" "variables" {
+  name    = "data/variables.json"
+  content = <<EOF
+  {
+    "dbt_docs_service_name": "entsoe-dbt-docs",
+    "dbt_docs_service_region": "${var.project_region}",
+    "dev_keyfile_client_email": "${local.dag_sa_key_file.client_email}",
+    "dev_keyfile_client_id": ${local.dag_sa_key_file.client_id},
+    "dev_keyfile_client_x509_cert_url": "${local.dag_sa_key_file.client_x509_cert_url}",
+    "dev_keyfile_private_key": "${replace(local.dag_sa_key_file.private_key, "\n", "\\n")}",
+    "dev_keyfile_private_key_id": "${local.dag_sa_key_file.private_key_id}",
+    "dev_project_id": "${local.dag_sa_key_file.project_id}",
+    "entsoe_api_key": "${var.entsoe_api_key}",
+    "entsoe_bucket_name": "${google_storage_bucket.entsoe_data_bucket.name}",
+    "entsoe_country_code": "${var.entsoe_country_code}",
+    "git_remote_url": "https://github.com/SaschaDittmann/entsoe-on-gcp.git",
+    "static_website_bucket_name": "${google_storage_bucket.static_website.name}"
+  } 
+  EOF
+  bucket  = split("/", google_composer_environment.entsoe_composer_env.config.0.dag_gcs_prefix).2
+
+  provisioner "local-exec" {
+    command = "gcloud composer environments run ${google_composer_environment.entsoe_composer_env.name} --location=${var.project_region} --project=${var.project_id} variables -- import /home/airflow/gcs/data/variables.json"
+  }
 }

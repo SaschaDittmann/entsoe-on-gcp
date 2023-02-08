@@ -90,8 +90,8 @@ with DAG(
 
     checkout = BashOperator(
         task_id='checkout',
-        bash_command="""git clone {{ var.value.git_remote_url }}
-            cp -r ./entsoe-on-gcp {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
+        bash_command="""git clone {{ var.value.git_remote_url }} ./{{ var.value.source_repo_name }}
+            cp -r ./{{ var.value.source_repo_name }} {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
             """,
         dag=dag,
     )

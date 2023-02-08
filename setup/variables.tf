@@ -13,6 +13,12 @@ variable "storage_web_bucket_name" {
   type        = string
 }
 
+variable "entsoe_api_key" {
+  description = "The API Key to access the ENTSO-E Transparency Platform."
+  type        = string
+}
+
+variable "entsoe_country_code" { default = "DE" }
 variable "bq_dataset_id" { default = "entsoe" }
 variable "data_location" { default = "EU" }
 variable "project_region" { default = "europe-west1" }

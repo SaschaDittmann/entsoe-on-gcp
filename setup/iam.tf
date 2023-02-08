@@ -39,6 +39,11 @@ resource "google_service_account" "dbt_service_account" {
   display_name = "Service Account for the Data Build Tool (DBT)"
 }
 
+resource "google_service_account_key" "dbt_service_account_key" {
+  service_account_id = google_service_account.dbt_service_account.name
+  public_key_type    = "TYPE_X509_PEM_FILE"
+}
+
 resource "google_project_iam_member" "dbt_sa_storage_object_viewer" {
   project = var.project_id
   role    = "roles/storage.objectViewer"

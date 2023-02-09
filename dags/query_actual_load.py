@@ -1,6 +1,9 @@
 from __future__ import print_function
 from datetime import datetime, timedelta
 import logging
+import tempfile
+import os
+import shutil
 
 from entsoe import EntsoePandasClient
 import pandas as pd
@@ -10,6 +13,7 @@ from airflow.models import Variable
 from airflow.models.connection import Connection
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -30,12 +34,37 @@ default_dag_args = {
 
 with DAG(
         'query_actual_load',
-        schedule_interval="0 * * * *",
+        schedule_interval="0 */6 * * *",
         catchup=False,
         dagrun_timeout=timedelta(minutes=15),
         default_args=default_dag_args) as dag:
 
-    def store_actual_load(ds, **kwargs):
+    def create_temp_directory(ti):
+        tmpdir = tempfile.TemporaryDirectory()
+        logging.info(f"directory {tmpdir.name} created")
+        assert os.path.exists(tmpdir.name)
+        ti.xcom_push(key='temp_directory', value=tmpdir.name)
+    setup_pipeline = PythonOperator(
+        task_id='setup_pipeline',
+        python_callable=create_temp_directory)
+
+    def remove_temp_directory(ti):
+        tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
+                              key='temp_directory')
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+            logging.info(f"directory {tmpdir} removed")
+    cleanup_pipeline = PythonOperator(
+        task_id='cleanup_pipeline',
+        trigger_rule=TriggerRule.ALL_DONE,
+        python_callable=remove_temp_directory)
+
+    def store_actual_load(ti, ds, **kwargs):
+        tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
+                              key='temp_directory')
+        os.makedirs(tmpdir, exist_ok=True)
+        logging.info(f"Data Directory (local): {tmpdir}")
+
         logging.info(f"Country Code: {country_code}")
         execution_date = datetime.strptime(ds, '%Y-%m-%d')
         logging.info(f"Execution Date: {execution_date}")
@@ -57,7 +86,7 @@ with DAG(
                 "Actual Load": "actual_load"
             })
 
-        tmp_file_path = '/home/airflow/gcs/data/actual_load.parquet'
+        tmp_file_path = f"{tmpdir}/actual_load.parquet"
         load_forecast.to_parquet(tmp_file_path)
 
         object_name = f"actual_load/{execution_date.strftime('year=%Y/month=%m/day=%d')}/actual_load.parquet"
@@ -66,3 +95,5 @@ with DAG(
         task_id='store_actual_load',
         provide_context=True,
         python_callable=store_actual_load)
+
+    setup_pipeline >> store_load_forecast_task >> cleanup_pipeline

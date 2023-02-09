@@ -1,6 +1,9 @@
 from __future__ import print_function
 from datetime import datetime, timedelta
 import logging
+import tempfile
+import os
+import shutil
 
 from entsoe import EntsoePandasClient
 import pandas as pd
@@ -10,6 +13,7 @@ from airflow.models import Variable
 from airflow.models.connection import Connection
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 
 from airflow.operators.bash_operator import BashOperator
 from airflow.operators.python_operator import PythonOperator
@@ -35,7 +39,32 @@ with DAG(
         dagrun_timeout=timedelta(minutes=60),
         default_args=default_dag_args) as dag:
 
-    def store_load_forecast(ds, **kwargs):
+    def create_temp_directory(ti):
+        tmpdir = tempfile.TemporaryDirectory()
+        logging.info(f"directory {tmpdir.name} created")
+        assert os.path.exists(tmpdir.name)
+        ti.xcom_push(key='temp_directory', value=tmpdir.name)
+    setup_pipeline = PythonOperator(
+        task_id='setup_pipeline',
+        python_callable=create_temp_directory)
+
+    def remove_temp_directory(ti):
+        tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
+                              key='temp_directory')
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+            logging.info(f"directory {tmpdir} removed")
+    cleanup_pipeline = PythonOperator(
+        task_id='cleanup_pipeline',
+        trigger_rule=TriggerRule.ALL_DONE,
+        python_callable=remove_temp_directory)
+
+    def store_load_forecast(ti, ds, **kwargs):
+        tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
+                              key='temp_directory')
+        os.makedirs(tmpdir, exist_ok=True)
+        logging.info(f"Data Directory (local): {tmpdir}")
+
         logging.info(f"Country Code: {country_code}")
         execution_date = datetime.strptime(ds, '%Y-%m-%d')
         logging.info(f"Execution Date: {execution_date}")
@@ -57,7 +86,7 @@ with DAG(
                 "Forecasted Load": "forecasted_load"
             })
 
-        tmp_file_path = '/home/airflow/gcs/data/load_forecast.parquet'
+        tmp_file_path = f"{tmpdir}/load_forecast.parquet"
         load_forecast.to_parquet(tmp_file_path)
 
         object_name = f"load_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/load_forecast.parquet"
@@ -67,7 +96,12 @@ with DAG(
         provide_context=True,
         python_callable=store_load_forecast)
 
-    def store_wind_and_solar_forecast(ds, **kwargs):
+    def store_wind_and_solar_forecast(ti, ds, **kwargs):
+        tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
+                              key='temp_directory')
+        os.makedirs(tmpdir, exist_ok=True)
+        logging.info(f"Data Directory (local): {tmpdir}")
+
         logging.info(f"Country Code: {country_code}")
         execution_date = datetime.strptime(ds, '%Y-%m-%d')
         logging.info(f"Execution Date: {execution_date}")
@@ -91,7 +125,7 @@ with DAG(
                 "Wind Onshore": "wind_offshore"
             })
 
-        tmp_file_path = '/home/airflow/gcs/data/wind_and_solar_forecast.parquet'
+        tmp_file_path = f"{tmpdir}/wind_and_solar_forecast.parquet"
         wind_and_solar_forecast.to_parquet(tmp_file_path)
 
         object_name = f"wind_and_solar_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/wind_and_solar_forecast.parquet"
@@ -100,3 +134,6 @@ with DAG(
         task_id='wind_and_solar_forecast',
         provide_context=True,
         python_callable=store_wind_and_solar_forecast)
+
+    setup_pipeline >> store_load_forecast_task >> cleanup_pipeline
+    setup_pipeline >> store_wind_and_solar_forecast_task >> cleanup_pipeline

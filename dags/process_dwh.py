@@ -81,14 +81,14 @@ with DAG(
         dagrun_timeout=timedelta(minutes=60),
         default_args=default_dag_args) as dag:
 
-    def setup_pipeline(ti):
+    def create_temp_directory(ti):
         tmpdir = tempfile.TemporaryDirectory()
         logging.info(f"directory {tmpdir.name} created")
         assert os.path.exists(tmpdir.name)
         ti.xcom_push(key='dbt_temp_directory', value=tmpdir.name)
     setup_pipeline = PythonOperator(
         task_id='setup_pipeline',
-        python_callable=setup_pipeline)
+        python_callable=create_temp_directory)
 
     def remove_temp_directory(ti):
         tmpdir = ti.xcom_pull(task_ids='setup_pipeline',

@@ -85,7 +85,7 @@ resource "google_storage_bucket_object" "variables" {
     "dev_project_id": "${local.dag_sa_key_file.project_id}",
     "entsoe_api_key": "${var.entsoe_api_key}",
     "entsoe_bucket_name": "${google_storage_bucket.entsoe_data_bucket.name}",
-    "entsoe_country_code": "${var.entsoe_country_code}",
+    "entsoe_country_codes": "${var.entsoe_country_codes}",
     "git_remote_url": "${var.git_remote_url}",
     "source_repo_name": "${var.source_repo_name}",
     "static_website_bucket_name": "${google_storage_bucket.static_website.name}"

@@ -21,7 +21,7 @@ from airflow.operators.python_operator import PythonOperator
 from airflow.contrib.hooks.gcs_hook import GoogleCloudStorageHook
 
 entsoe_api_key = Variable.get("entsoe_api_key")
-country_code = Variable.get("entsoe_country_code")
+country_codes = Variable.get("entsoe_country_codes").split(",")
 client = EntsoePandasClient(api_key=entsoe_api_key)
 
 cloud_storage = GoogleCloudStorageHook()
@@ -65,6 +65,7 @@ with DAG(
         os.makedirs(tmpdir, exist_ok=True)
         logging.info(f"Data Directory (local): {tmpdir}")
 
+        country_code = kwargs['country_code']
         logging.info(f"Country Code: {country_code}")
         execution_date = datetime.strptime(ds, '%Y-%m-%d')
         logging.info(f"Execution Date: {execution_date}")
@@ -91,10 +92,6 @@ with DAG(
 
         object_name = f"load_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/load_forecast.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
-    store_load_forecast_task = PythonOperator(
-        task_id='store_load_forecast',
-        provide_context=True,
-        python_callable=store_load_forecast)
 
     def store_wind_and_solar_forecast(ti, ds, **kwargs):
         tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
@@ -102,6 +99,7 @@ with DAG(
         os.makedirs(tmpdir, exist_ok=True)
         logging.info(f"Data Directory (local): {tmpdir}")
 
+        country_code = kwargs['country_code']
         logging.info(f"Country Code: {country_code}")
         execution_date = datetime.strptime(ds, '%Y-%m-%d')
         logging.info(f"Execution Date: {execution_date}")
@@ -130,10 +128,24 @@ with DAG(
 
         object_name = f"wind_and_solar_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/wind_and_solar_forecast.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
-    store_wind_and_solar_forecast_task = PythonOperator(
-        task_id='wind_and_solar_forecast',
-        provide_context=True,
-        python_callable=store_wind_and_solar_forecast)
 
-    setup_pipeline >> store_load_forecast_task >> cleanup_pipeline
-    setup_pipeline >> store_wind_and_solar_forecast_task >> cleanup_pipeline
+    store_load_forecast_tasks = []
+    store_wind_and_solar_forecast_tasks = []
+    for country_code in country_codes:
+        store_load_forecast_task = PythonOperator(
+            task_id=f"store_load_forecast_{country_code.lower()}",
+            provide_context=True,
+            python_callable=store_load_forecast,
+            op_kwargs={'country_code': country_code},
+            dag=dag)
+        setup_pipeline >> store_load_forecast_task >> cleanup_pipeline
+        store_load_forecast_tasks.append(store_load_forecast_task)
+        store_wind_and_solar_forecast_task = PythonOperator(
+            task_id=f"wind_and_solar_forecast_{country_code.lower()}",
+            provide_context=True,
+            python_callable=store_wind_and_solar_forecast,
+            op_kwargs={'country_code': country_code},
+            dag=dag)
+        setup_pipeline >> store_wind_and_solar_forecast_task >> cleanup_pipeline
+        store_wind_and_solar_forecast_tasks.append(
+            store_wind_and_solar_forecast_task)

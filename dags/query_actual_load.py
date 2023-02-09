@@ -90,7 +90,7 @@ with DAG(
         tmp_file_path = f"{tmpdir}/actual_load.parquet"
         load_forecast.to_parquet(tmp_file_path)
 
-        object_name = f"actual_load/{execution_date.strftime('year=%Y/month=%m/day=%d')}/actual_load.parquet"
+        object_name = f"actual_load/{execution_date.strftime('year=%Y/month=%m/day=%d')}/actual_load_{country_code.lower()}.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
     store_actual_load_tasks = []
     for country_code in country_codes:

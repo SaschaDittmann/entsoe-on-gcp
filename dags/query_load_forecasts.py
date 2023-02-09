@@ -90,7 +90,7 @@ with DAG(
         tmp_file_path = f"{tmpdir}/load_forecast.parquet"
         load_forecast.to_parquet(tmp_file_path)
 
-        object_name = f"load_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/load_forecast.parquet"
+        object_name = f"load_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/load_forecast_{country_code.lower()}.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
 
     def store_wind_and_solar_forecast(ti, ds, **kwargs):
@@ -126,7 +126,7 @@ with DAG(
         tmp_file_path = f"{tmpdir}/wind_and_solar_forecast.parquet"
         wind_and_solar_forecast.to_parquet(tmp_file_path)
 
-        object_name = f"wind_and_solar_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/wind_and_solar_forecast.parquet"
+        object_name = f"wind_and_solar_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/wind_and_solar_forecast_{country_code.lower()}.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
 
     store_load_forecast_tasks = []

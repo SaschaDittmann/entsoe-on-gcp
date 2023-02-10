@@ -59,8 +59,62 @@ sources:
             description: Forecasted Solar Generation
           - name: wind_offshore
             description: Forecasted Wind (Offshore) Generation
-          - name: wind_onshore,
+          - name: wind_onshore
             description: Forecasted Wind (Onshore) Generation
+        loaded_at_field: import_date
+        freshness:
+          warn_after: {count: 24, period: hour}
+          error_after: {count: 48, period: hour}
+      - name: vw_installed_generation_capacity_aggregated
+        description: Installed Generation Capacity Aggregated
+        columns:
+          - name: ts
+            description: Timestamp
+            tests:
+              #- unique
+              - not_null
+          - name: country_code
+            description: Country Code
+            tests:
+              - not_null
+          - name: biomass_actual_aggregated
+            description: Biomass (Actual Aggregated)
+          - name: fossil_brown_coal_lignite_actual_aggregated
+            description: Fossil Brown Coal / Lignite (Actual Aggregated)
+          - name: fossil_gas_actual_aggregated
+            description: Fossil Gas (Actual Aggregated)
+          - name: fossil_hard_coal_actual_aggregated
+            description: Fossil Hard Coal (Actual Aggregated)
+          - name: fossil_oil_actual_aggregated
+            description: Fossil Oil (Actual Aggregated)
+          - name: geothermal_actual_aggregated
+            description: Geothermal (Actual Aggregated)
+          - name: hydro_pumped_storage_actual_aggregated
+            description: Hydro Pumped Storage (Actual Aggregated)
+          - name: hydro_pumped_storage_actual_consumption
+            description: Gydro Pumped Storage (Actual Consumption)
+          - name: hydro_run_of_river_and_poundage_actual_aggregated
+            description: Hydro Run of River and Poundage (Actual Aggregated)
+          - name: hydro_water_reservoir_actual_aggregated
+            description: Hydro Water Reservoir (Actual Aggregated)
+          - name: nuclear_actual_aggregated
+            description: Nuclear (Actual Aggregated)
+          - name: other_actual_aggregated
+            description: Other (Actual Aggregated)
+          - name: other_renewable_actual_aggregated
+            description: Other Renewable (Actual Aggregated)
+          - name: solar_actual_aggregated
+            description: Solar (Actual Aggregated)
+          - name: solar_actual_consumption
+            description: Solar (Actual Consumption)
+          - name: waste_actual_aggregated
+            description: Waste (Actual Aggregated)
+          - name: wind_offshore_actual_aggregated
+            description: Wind Offshore (Actual Aggregated)
+          - name: wind_onshore_actual_aggregated
+            description: Wind Onshore (Actual Aggregated)
+          - name: wind_onshore_actual_consumption
+            description: Wind Onshore (Actual Consumption)
         loaded_at_field: import_date
         freshness:
           warn_after: {count: 24, period: hour}

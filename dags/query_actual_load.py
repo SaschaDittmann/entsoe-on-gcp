@@ -87,7 +87,7 @@ with DAG(
                 "Actual Load": "actual_load"
             })
 
-        tmp_file_path = f"{tmpdir}/actual_load.parquet"
+        tmp_file_path = f"{tmpdir}/actual_load_{country_code.lower()}.parquet"
         load_forecast.to_parquet(tmp_file_path)
 
         object_name = f"actual_load/{execution_date.strftime('year=%Y/month=%m/day=%d')}/actual_load_{country_code.lower()}.parquet"

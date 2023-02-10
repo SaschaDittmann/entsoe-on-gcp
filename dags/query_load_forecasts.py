@@ -87,7 +87,7 @@ with DAG(
                 "Forecasted Load": "forecasted_load"
             })
 
-        tmp_file_path = f"{tmpdir}/load_forecast.parquet"
+        tmp_file_path = f"{tmpdir}/load_forecast_{country_code.lower()}.parquet"
         load_forecast.to_parquet(tmp_file_path)
 
         object_name = f"load_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/load_forecast_{country_code.lower()}.parquet"
@@ -123,7 +123,7 @@ with DAG(
                 "Wind Onshore": "wind_offshore"
             })
 
-        tmp_file_path = f"{tmpdir}/wind_and_solar_forecast.parquet"
+        tmp_file_path = f"{tmpdir}/wind_and_solar_forecast_{country_code.lower()}.parquet"
         wind_and_solar_forecast.to_parquet(tmp_file_path)
 
         object_name = f"wind_and_solar_forecast/{execution_date.strftime('year=%Y/month=%m/day=%d')}/wind_and_solar_forecast_{country_code.lower()}.parquet"

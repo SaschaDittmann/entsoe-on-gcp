@@ -33,7 +33,7 @@ default_dag_args = {
 }
 
 with DAG(
-        'query_actual_load',
+        'query_installed_generation_capacity_aggregated',
         schedule_interval="0 */6 * * *",
         catchup=False,
         dagrun_timeout=timedelta(minutes=15),
@@ -59,7 +59,7 @@ with DAG(
         trigger_rule=TriggerRule.ALL_DONE,
         python_callable=remove_temp_directory)
 
-    def store_actual_load(ti, ds, **kwargs):
+    def store_installed_generation_capacity_aggregated(ti, ds, **kwargs):
         tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
                               key='temp_directory')
         os.makedirs(tmpdir, exist_ok=True)
@@ -77,28 +77,47 @@ with DAG(
         start = pd.Timestamp(entsoe_start.strftime("%Y%m%d"), tz='UTC')
         end = pd.Timestamp(entsoe_end.strftime("%Y%m%d"), tz='UTC')
 
-        load_forecast = client.query_load(
+        generation = client.query_generation(
             country_code, start=start, end=end)
-        load_forecast = load_forecast \
-            .reset_index(level=0) \
-            .assign(country_code=country_code) \
-            .rename(columns={
-                "index": "ts",
-                "Actual Load": "actual_load"
-            })
 
-        tmp_file_path = f"{tmpdir}/actual_load_{country_code.lower()}.parquet"
-        load_forecast.to_parquet(tmp_file_path)
+        generation = generation.reset_index(level=0)
+        column_names = list(generation.columns.values)
+        column_names[0] = 'ts'
+        column_names[1] = 'biomass_actual_aggregated'
+        column_names[2] = 'fossil_brown_coal_lignite_actual_aggregated'
+        column_names[3] = 'fossil_gas_actual_aggregated'
+        column_names[4] = 'fossil_hard_coal_actual_aggregated'
+        column_names[5] = 'fossil_oil_actual_aggregated'
+        column_names[6] = 'geothermal_actual_aggregated'
+        column_names[7] = 'hydro_pumped_storage_actual_aggregated'
+        column_names[8] = 'hydro_pumped_storage_actual_consumption'
+        column_names[9] = 'hydro_run_of_river_and_poundage_actual_aggregated'
+        column_names[10] = 'hydro_water_reservoir_actual_aggregated'
+        column_names[11] = 'nuclear_actual_aggregated'
+        column_names[12] = 'other_actual_aggregated'
+        column_names[13] = 'other_renewable_actual_aggregated'
+        column_names[14] = 'solar_actual_aggregated'
+        column_names[15] = 'solar_actual_consumption'
+        column_names[16] = 'waste_actual_aggregated'
+        column_names[17] = 'wind_offshore_actual_aggregated'
+        column_names[18] = 'wind_onshore_actual_aggregated'
+        column_names[19] = 'wind_onshore_actual_consumption'
+        generation.columns = column_names
+        generation = generation.assign(country_code=country_code)
 
-        object_name = f"actual_load/{execution_date.strftime('year=%Y/month=%m/day=%d')}/actual_load_{country_code.lower()}.parquet"
+        tmp_file_path = f"{tmpdir}/installed_generation_capacity_aggregated_{country_code.lower()}.parquet"
+        generation.to_parquet(tmp_file_path)
+
+        object_name = f"installed_generation_capacity_aggregated/{execution_date.strftime('year=%Y/month=%m/day=%d')}/installed_generation_capacity_aggregated_{country_code.lower()}.parquet"
         cloud_storage.upload(entsoe_bucket_name, object_name, tmp_file_path)
-    store_actual_load_tasks = []
+    store_installed_generation_capacity_aggregated_tasks = []
     for country_code in country_codes:
-        store_actual_load_task = PythonOperator(
-            task_id=f"store_actual_load_{country_code.lower()}",
+        store_installed_generation_capacity_aggregated_task = PythonOperator(
+            task_id=f"store_installed_generation_capacity_aggregated_{country_code.lower()}",
             provide_context=True,
-            python_callable=store_actual_load,
+            python_callable=store_installed_generation_capacity_aggregated,
             op_kwargs={'country_code': country_code},
             dag=dag)
-        setup_pipeline >> store_actual_load_task >> cleanup_pipeline
-        store_actual_load_tasks.append(store_actual_load_task)
+        setup_pipeline >> store_installed_generation_capacity_aggregated_task >> cleanup_pipeline
+        store_installed_generation_capacity_aggregated_tasks.append(
+            store_installed_generation_capacity_aggregated_task)

@@ -1,0 +1,107 @@
+[
+    {
+        "name": "ts",
+        "type": "TIMESTAMP",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "country_code",
+        "type": "STRING",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "biomass_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "fossil_brown_coal_lignite_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "fossil_gas_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "fossil_hard_coal_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "fossil_oil_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "geothermal_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "hydro_pumped_storage_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "hydro_pumped_storage_actual_consumption",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "hydro_run_of_river_and_poundage_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "hydro_water_reservoir_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "nuclear_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "other_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "other_renewable_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "solar_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "solar_actual_consumption",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "waste_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "wind_Offshore_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "wind_Onshore_actual_aggregated",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    },
+    {
+        "name": "wind_Onshore_actual_consumption",
+        "type": "FLOAT",
+        "mode": "REQUIRED"
+    }
+]

@@ -18,7 +18,7 @@ variable "entsoe_api_key" {
   type        = string
 }
 
-variable "entsoe_country_code" { default = "DE" }
+variable "entsoe_country_codes" { default = "DE" }
 variable "bq_dataset_id" { default = "entsoe" }
 variable "data_location" { default = "EU" }
 variable "project_region" { default = "europe-west1" }

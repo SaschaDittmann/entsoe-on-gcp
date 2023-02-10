@@ -2,14 +2,16 @@ from __future__ import print_function
 from datetime import timedelta
 import json
 import logging
-import os
 import tempfile
+import os
+import shutil
 
 from airflow import DAG, settings
 from airflow.models import Variable
 from airflow.models.connection import Connection
 from airflow.utils.task_group import TaskGroup
 from airflow.utils.dates import days_ago
+from airflow.utils.trigger_rule import TriggerRule
 
 from airflow.operators.bash_operator import BashOperator
 from airflow_dbt_python.operators.dbt import (
@@ -84,21 +86,32 @@ with DAG(
         logging.info(f"directory {tmpdir.name} created")
         assert os.path.exists(tmpdir.name)
         ti.xcom_push(key='dbt_temp_directory', value=tmpdir.name)
-    create_temp_directory_task = PythonOperator(
-        task_id='create_temp_directory',
+    setup_pipeline = PythonOperator(
+        task_id='setup_pipeline',
         python_callable=create_temp_directory)
+
+    def remove_temp_directory(ti):
+        tmpdir = ti.xcom_pull(task_ids='setup_pipeline',
+                              key='dbt_temp_directory')
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir)
+            logging.info(f"directory {tmpdir} removed")
+    cleanup_pipeline = PythonOperator(
+        task_id='cleanup_pipeline',
+        trigger_rule=TriggerRule.ALL_DONE,
+        python_callable=remove_temp_directory)
 
     checkout = BashOperator(
         task_id='checkout',
         bash_command="""git clone {{ var.value.git_remote_url }} ./{{ var.value.source_repo_name }}
-            cp -r ./{{ var.value.source_repo_name }} {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
+            cp -r ./{{ var.value.source_repo_name }} {{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}
             """,
         dag=dag,
     )
 
     resolve_dependencies = DbtDepsOperator(
         task_id='resolve-dependencies',
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -106,7 +119,7 @@ with DAG(
 
     check_source_freshness = DbtSourceFreshnessOperator(
         task_id='check-source-freshness',
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         do_xcom_push_artifacts=["sources.json"],
@@ -116,7 +129,7 @@ with DAG(
     run_source_tests = DbtTestOperator(
         task_id='run-source-tests',
         select="source:*",
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -124,7 +137,7 @@ with DAG(
 
     add_seeds = DbtSeedOperator(
         task_id='add-seeds',
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -132,7 +145,7 @@ with DAG(
 
     run_transformations = DbtRunOperator(
         task_id='run-transformations',
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         do_xcom_push_artifacts=["manifest.json", "run_results.json"],
@@ -141,7 +154,7 @@ with DAG(
 
     generate_docs = DbtDocsGenerateOperator(
         task_id='generate-docs',
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -150,7 +163,7 @@ with DAG(
     run_tests = DbtTestOperator(
         task_id='run-tests',
         exclude='source:*',
-        project_dir="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/entsoe_dw",
+        project_dir="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/entsoe_dw",
         profiles_dir=None,
         target="entsoe_bigquery_connection",
         dag=dag,
@@ -158,7 +171,7 @@ with DAG(
 
     create_dbt_docs_file = BashOperator(
         task_id='create_dbt_docs_file',
-        bash_command="""cd {{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}
+        bash_command="""cd {{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}
             tar -czvf dbt-docs.tar.gz -C ./docker Dockerfile -C ../entsoe_dw/target index.html manifest.json catalog.json
             """,
         dag=dag,
@@ -166,7 +179,7 @@ with DAG(
 
     upload_dbt_docs_file = LocalFilesystemToGCSOperator(
         task_id="upload_dbt_docs_file",
-        src="{{ ti.xcom_pull(task_ids='create_temp_directory', key='dbt_temp_directory') }}/dbt-docs.tar.gz",
+        src="{{ ti.xcom_pull(task_ids='setup_pipeline', key='dbt_temp_directory') }}/dbt-docs.tar.gz",
         dst="dbt-docs.tar.gz",
         bucket=website_bucket_name,
     )
@@ -196,7 +209,7 @@ with DAG(
         build=docker_build_from_storage_body
     )
 
-    create_temp_directory_task >> checkout
+    setup_pipeline >> checkout
     checkout >> resolve_dependencies
     resolve_dependencies >> check_source_freshness
     check_source_freshness >> run_source_tests
@@ -207,3 +220,4 @@ with DAG(
     generate_docs >> create_dbt_docs_file
     create_dbt_docs_file >> upload_dbt_docs_file
     upload_dbt_docs_file >> build_container_image
+    upload_dbt_docs_file >> cleanup_pipeline

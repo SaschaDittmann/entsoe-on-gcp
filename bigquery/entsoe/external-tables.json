@@ -29,6 +29,16 @@
             "source_uris": [
                 "gs://<storage_data_bucket_name>/wind_and_solar_forecast/*"
             ]
+        },
+        "installed_generation_capacity_aggregated": {
+            "table_id": "installed_generation_capacity_aggregated",
+            "external_data_autodetect": true,
+            "source_format": "PARQUET",
+            "hive_partitioning_mode": "AUTO",
+            "source_uri_prefix": "gs://<storage_data_bucket_name>/installed_generation_capacity_aggregated/",
+            "source_uris": [
+                "gs://<storage_data_bucket_name>/installed_generation_capacity_aggregated/*"
+            ]
         }
     }
 }
